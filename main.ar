@@ -1,0 +1,14 @@
+export main = (): int -> {
+    printf("res: %d\n", lol(4, "lol"));
+    return 1 == 2;
+};
+
+export lol = (a: int, l: str): int -> {
+    var b = 10;
+    while (b != 0) {
+        b = b - 1;
+        a = a * a / 3;
+        printf("%s: %lu\n", l, a);
+    };
+    return a;
+};

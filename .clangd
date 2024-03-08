@@ -1,0 +1,2 @@
+CompileFlags:
+  Add: ["-xc", "-DARNEL_DEBUG_BUILD", "-D__STRINGS_IMPLEMENTATION", "-Wall", "-Wextra"]
