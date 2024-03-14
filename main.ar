@@ -1,14 +1,12 @@
 export main = (): int -> {
-    printf("res: %d\n", lol(4, "lol"));
-    return 1 == 2;
+    print("kek: %zu\n", is_odd(1));
+    return 0;
 };
 
-export lol = (a: int, l: str): int -> {
-    var b = 10;
-    while (b != 0) {
-        b = b - 1;
-        a = a * a / 3;
-        printf("%s: %lu\n", l, a);
+export is_odd = (digit: int): int -> {
+    return if ((digit / 2) * 2 != digit) {
+        1;
+    } else {
+        0;
     };
-    return a;
 };

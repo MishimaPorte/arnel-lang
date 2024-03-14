@@ -1,11 +1,11 @@
-#include "sv.h"
+#include "bytes.h"
 #include "lexer.h"
 #include <ctype.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-struct lexer_t *lexer_init(struct lexer_t *l, strview_t v)
+struct lexer_t *lexer_init(struct lexer_t *l, view_t v)
 {
     tokens_init(&l->toks, 1);
     l->text = v;
@@ -31,7 +31,7 @@ static void lex_num(struct lexer_t *l, token_t *tok)
         } else break;
     }
     tok->type = is_float ? L_FLOAT : L_INTEGER;
-    tok->lexeme = sv_make(&cur(l), i);
+    tok->lexeme = view_make(&cur(l), i);
     l->text.chars+=i;
     l->text.len-=i;
 };
@@ -113,8 +113,8 @@ static void lex_word(struct lexer_t *l, token_t *tok) {
 #ifdef ARNEL_DEBUG_BUILD
     lexer = l;
 #endif
-    tok->lexeme = (strview_t){l->text.chars};
-    sv_chop_predicate(&l->text, __chop_predicate_word);
+    tok->lexeme = (view_t){l->text.chars}; // INFO: we NOLINT here because the length is assigned later
+    view_chop_predicate(&l->text, __chop_predicate_word);
     tok->lexeme.len = l->text.chars - tok->lexeme.chars;
     if (tok->lexeme.len == 0) tok->type = L_EOF;
     else check_kw(tok);
@@ -132,7 +132,7 @@ static inline void trim_left(struct lexer_t *l)
         } else l->col++;
     }
 #else
-    l->text = sv_trim_left(l->text);
+    l->text = view_trim_left(l->text);
 #endif
 }
 static token_t *__next_token(struct lexer_t *l)
@@ -168,7 +168,7 @@ static token_t *__next_token(struct lexer_t *l)
         case '6': case '7': case '8': case '9': case '0':
             lex_num(l, tok); break;
 #define one_char_token(token, ttype) case token: \
-            sv_chopn(&l->text, 1);\
+            view_chopn(&l->text, 1);\
             l->col++; \
             tok->type = L_##ttype; \
             break;
@@ -190,10 +190,10 @@ static token_t *__next_token(struct lexer_t *l)
         one_char_token('\'', QUOT)
 #undef one_char_token
 #define two_char_tokens(t1, t2, tt1, tt2) case t1: \
-            sv_chopn(&l->text, 1);\
+            view_chopn(&l->text, 1);\
             l->col++; \
             if (cur(l) == t2) { \
-                sv_chopn(&l->text, 1);\
+                view_chopn(&l->text, 1);\
                 l->col++; \
                 tok->type = tt2; \
             } else tok->type = tt1; \
@@ -209,14 +209,14 @@ static token_t *__next_token(struct lexer_t *l)
 #undef two_char_tokens
 #define three_char_tokens(t1, t2, t3, tt1, tt2, tt3) \
         case t1: \
-            sv_chopn(&l->text, 1);\
+            view_chopn(&l->text, 1);\
             l->col++; \
             if (cur(l) == t2) { \
-                sv_chopn(&l->text, 1);\
+                view_chopn(&l->text, 1);\
                 l->col++; \
                 tok->type = tt2; \
             } else if (cur(l) == t3) { \
-                sv_chopn(&l->text, 1);\
+                view_chopn(&l->text, 1);\
                 l->col++; \
                 tok->type = tt3; \
             } else tok->type = tt1; \
@@ -226,18 +226,18 @@ static token_t *__next_token(struct lexer_t *l)
         three_char_tokens('+', '+', '=', L_PLUS, L_PLUS2, L_PLUS_EQ);
 #undef three_char_tokens
     case '-':
-        sv_chopn(&l->text, 1);
+        view_chopn(&l->text, 1);
         l->col++;
         if (((l)->text.chars[0]) == '-') {
-          sv_chopn(&l->text, 1);
+          view_chopn(&l->text, 1);
           l->col++;
           tok->type = L_MINUS2;
         } else if (((l)->text.chars[0]) == '>') {
-          sv_chopn(&l->text, 1);
+          view_chopn(&l->text, 1);
           l->col++;
           tok->type = L_ARROW_R;
         } else if (((l)->text.chars[0]) == '=') {
-          sv_chopn(&l->text, 1);
+          view_chopn(&l->text, 1);
           l->col++;
           tok->type = L_MINUS_EQ;
         } else tok->type = L_MINUS;

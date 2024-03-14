@@ -1,2 +1,2 @@
 CompileFlags:
-  Add: ["-xc", "-DARNEL_DEBUG_BUILD", "-D__STRINGS_IMPLEMENTATION", "-Wall", "-Wextra"]
+  Add: ["-xc", "-DARNEL_DEBUG_BUILD", "-D__BYTES_IMPLEMENTATION", "-Wall", "-Wextra", "-Wformat=0"]

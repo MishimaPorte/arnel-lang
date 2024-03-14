@@ -1,7 +1,7 @@
 #ifndef ARNELPARSER
 #define ARNELPARSER
 #include "lexer.h"
-#include "sv.h"
+#include "bytes.h"
 #include "types.h"
 #include <stddef.h>
 #include <stdint.h>
@@ -39,13 +39,6 @@ typedef enum prec_t {
     PREC_PRIMARY
 } prec_t;
 
-#define   f_export(s)         (((s)->flags)&(0x01<<0))
-#define   f_export_set(s)     (((s)->flags)|=(0x01<<0))
-#define   f_export_unset(s)   (((s)->flags)&=(~(0x01<<0)))
-#define   f_const(s)          (((s)->flags)&(0x01<<1))
-#define   f_const_set(s)      (((s)->flags)|=(0x01<<1))
-#define   f_const_unset(s)    (((s)->flags)&=(~(0x01<<1)))
-
 
 typedef struct ast_t {
     ast_type_t t;
@@ -58,7 +51,7 @@ typedef struct ast_t {
     } children[];
 } ast_t;
 
-#define ast_as_sv(node) ((strview_t*)&((node)->children[0].node))
+#define ast_as_view(node) ((view_t*)&((node)->children[0].node))
 #define ast_as_uint(node) ((uintmax_t*)((node)->children[0].node))
 
 struct func_body {
@@ -66,14 +59,23 @@ struct func_body {
     ast_t **nodes;
 };
 
+#define   __flag(n)         (0x01<<n)
+#define   f_export(s)         (((s)->flags)&__flag(0))
+#define   f_export_set(s)     (((s)->flags)|=__flag(0))
+#define   f_export_unset(s)   (((s)->flags)&=__flag(0))
+#define   f_const(s)          (((s)->flags)&__flag(1))
+#define   f_const_set(s)      (((s)->flags)|=__flag(1))
+#define   f_const_unset(s)    (((s)->flags)&=__flag(1))
+
 typedef struct symbol_t {
     uint64_t flags;
-    strview_t symbol_name;
+    view_t symbol_name; //INFO: symbol name is the name by which an actual call is performed inside the executable.
+                        // a link-time name. Aliases are made with scope thing.
     typeid_t type;
     size_t num_elems;
     union {
         struct func_body body;
-    } data;
+    } as;
 } symbol_t;
 
 

@@ -1,5 +1,5 @@
 #include "types.h"
-#include "sv.h"
+#include "bytes.h"
 #include <assert.h>
 #include <err.h>
 #include <errno.h>
@@ -36,7 +36,7 @@ void put_type(types_t *s, typeid_t n)
 };
 
 
-type_t *alloc_type(strview_t name)
+type_t *alloc_type(view_t name)
 {
     if (typesystem.__len == typesystem.__cap) {
         typesystem.types = realloc(typesystem.types, typesystem.__cap *= 2);
@@ -79,10 +79,10 @@ type_t *alloc_type_from_cstr(const char *name)
     return &typesystem.types[typesystem.__len++];
 };
 
-type_t *get_type_for_name(strview_t name)
+type_t *get_type_for_name(view_t name)
 {
     for (size_t i = 0; i < typesystem.__len; i++)
-        if (sv_cmp(name, typesystem.types[i].typename) == 0)
+        if (view_cmp(name, typesystem.types[i].typename) == 0)
             return &typesystem.types[i];
 
     return NULL;
@@ -90,8 +90,8 @@ type_t *get_type_for_name(strview_t name)
 
 void init_typesystem()
 {
-    typesystem.types = calloc(10, sizeof(type_t));
-    typesystem.__cap = 10;
+    typesystem.types = calloc(20, sizeof(type_t));
+    typesystem.__cap = 20;
     typesystem.__len = 0;
 
     //INFO: asserts are use
@@ -104,5 +104,8 @@ void init_typesystem()
     assert(TYPE_VOID == alloc_type_from_cstr("void")->__type_id);
     assert(TYPE_MODULE == alloc_type_from_cstr("module")->__type_id);
     assert(TYPE_INTEGER == alloc_type_from_cstr("int")->__type_id);
+    assert(TYPE_DOUBLE == alloc_type_from_cstr("double")->__type_id);
+    assert(TYPE_TYPE == alloc_type_from_cstr("type")->__type_id);
+    assert(TYPE_VARIADIC == alloc_type_from_cstr("__variadic")->__type_id);
 };
 

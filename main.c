@@ -1,4 +1,4 @@
-#define __STRINGS_IMPLEMENTATION
+#define __BYTES_IMPLEMENTATION
 #define HASHMAP_IMPLEMENTATION
 #include "types.h"
 #include "compiler.h"
@@ -7,7 +7,6 @@
 #include "lexer.h"
 #include <stddef.h>
 #include <stdio.h>
-#include "sv.h"
 
 int main(int argc, char *argv[])
 {

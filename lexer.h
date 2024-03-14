@@ -2,7 +2,7 @@
 #define ARNELLEXER
 
 #include "da.h"
-#include "sv.h"
+#include "bytes.h"
 #include <stddef.h>
 #include <stdint.h>
 
@@ -43,7 +43,7 @@ enum token_type_t {
 };
 
 typedef struct token_t {
-    strview_t lexeme;
+    view_t lexeme;
     uint64_t type;
 #ifdef ARNEL_DEBUG_BUILD
     size_t line, col;
@@ -54,13 +54,14 @@ typedef struct tokens {
     token_t **items;
     size_t cap, len;
 } tokens;
+
 tokens *tokens_append(tokens *da, token_t *item);
 token_t *tokens_get(tokens *da, size_t i);
 tokens *tokens_init(tokens *da, size_t i);
 tokens *tokens_remove(tokens *da, size_t i, token_t **out);
 
 struct lexer_t {
-    strview_t text;
+    view_t text;
     tokens toks;
 #ifdef ARNEL_DEBUG_BUILD
     size_t line, col;
@@ -69,7 +70,7 @@ struct lexer_t {
 
 #define cur(l) ((l)->text.chars[0])
 
-struct lexer_t *lexer_init(struct lexer_t *l, strview_t v);
+struct lexer_t *lexer_init(struct lexer_t *l, view_t v);
 token_t *next_token(struct lexer_t *l);
 // void push_token(struct lexer_t *l, token_t *tok);
 token_t *peek_token(struct lexer_t *l, size_t lookahead);

@@ -1,6 +1,6 @@
 #include "parser.h"
 #include "lexer.h"
-#include "sv.h"
+#include "bytes.h"
 #include "types.h"
 #include <math.h>
 #include <stddef.h>
@@ -48,7 +48,7 @@ static typeid_t parse_type(struct parser_t *p)
                 node->t = A_DECL_LOCAL;
                 node->num_elems = 2;
                 node->prec = PREC_STMT;
-                *(strview_t*)&node->children[0].opaque = tok->lexeme;
+                *(view_t*)&node->children[0].opaque = tok->lexeme;
                 free(tok);
                 tok = next_token(p->l);
                 putval(p, node);
@@ -113,20 +113,16 @@ static void __parse(struct parser_t *p)
                 sub_expr(p);                                               // statement borders are delimeted by nodes
 
             if (p->operators.len != 0 && peekop(p)->prec == PREC_STMT && peekop(p)->ready == 1)
-                while (p->operators.len != 0 && peekop(p)->prec == PREC_STMT && peekop(p)->ready == 1) switch (peekop(p)->t) {
+                do switch (peekop(p)->t) {
                     case A_COND: {
-                        if (peekop(p)->children[1].node == NULL) {
-                            peekop(p)->children[1].node = popval(p);
-                            peekop(p)->ready = 0;
-                            goto out;
-                        } else {
-                            PANIKA("unreachable");
-                        };
+                        peekop(p)->children[1].node = popval(p);
+                        putval(p, popop(p));
                     }; break;
                     case A_ELSE_CLAUSE: {
                         popop(p);
                         ast_t *conditional = popop(p);
                         conditional->children[2].node = popval(p);
+                        conditional->children[1].node = popval(p);
                         putval(p, conditional);
                     }; break;
                     case A_RET: {
@@ -140,8 +136,9 @@ static void __parse(struct parser_t *p)
                     default: {
                         goto out;
                     }; break;
-                } 
+                } while (p->operators.len != 0 && peekop(p)->prec == PREC_STMT && peekop(p)->ready == 1); 
             else if (peekval(p)->t != A_DECL_LOCAL && peekval(p)->t != A_DECL_ASSIGNMENT){
+                fprintf(stderr, "expr voidance, tok: %zu/%zu\n", tok->line, tok->col);
                 ast_t *node = alloc_node(0);
                 node->t = __EXPR_TO_VOID;
                 node->num_elems = 0;
@@ -167,6 +164,10 @@ static void __parse(struct parser_t *p)
             node->num_elems = 2;
             node->ready = 1;
             node->prec = PREC_STMT;
+            if (peekval(p)->t == __EXPR_TO_VOID) {
+                popval(p);
+                fprintf(stderr, "doing pop\n");
+            };
             node->children[0].opaque = p->values.len;
             node->children[1].opaque = (uintptr_t)p->values.stack;
             free(p->operators.stack);
@@ -202,7 +203,7 @@ static void __parse(struct parser_t *p)
                 node->prec = PREC_STMT;
                 putval(p, node);
             }
-            *(strview_t*)&node->children[0] = id->lexeme;
+            *(view_t*)&node->children[0] = id->lexeme;
         }; break;
         case L_EQ: { // TODO: implement assignment
             ast_t *node = alloc_node(2); // lvalue and rvalue
@@ -213,6 +214,7 @@ static void __parse(struct parser_t *p)
             putop(p, node);
         }; break;
         case L_IF: {
+           fprintf(stderr, "here!\n");
             ast_t *node = alloc_node(3);
             node->t = A_COND;
             node->num_elems = 3;
@@ -234,7 +236,7 @@ static void __parse(struct parser_t *p)
             node->t = A_IDENT;
             node->num_elems = 2;
             node->prec = PREC_PRIMARY;
-            *(strview_t*)&node->children[0].opaque = tok->lexeme; 
+            *(view_t*)&node->children[0].opaque = tok->lexeme; 
             putval(p, node);
         }; break;
         case L_RPAREN: { //INFO: parsing parentheses for dijkstras thing
@@ -253,7 +255,7 @@ static void __parse(struct parser_t *p)
                     ast_t *old_node = popval(p);
                     ast_t *func = alloc_node(args->len + 2); //INFO: allocating a new function call node
                                                          // to create space for children
-                    *(strview_t*)&func->children[0].opaque = *(strview_t*)&old_node->children[0].opaque; 
+                    *(view_t*)&func->children[0].opaque = *(view_t*)&old_node->children[0].opaque; 
                     memcpy(&func->children[2], args->stack, sizeof(void*)*args->len);
                     func->t = A_CALL_FINISHED;
                     func->num_elems = args->len + 2;
@@ -357,9 +359,9 @@ static ast_t *parse_top_level(struct parser_t *p)
     next_token(p->l); //consuming a curly
 
     if (next_token(p->l)->type != L_SEMICOLON) PANIKA("semicolon after declaration needed");
-    p->now_symbol->data.body.num_elems = p->values.len;
-    p->now_symbol->data.body.nodes = malloc(sizeof(void*)*p->values.len);
-    memcpy(p->now_symbol->data.body.nodes, p->values.stack, p->values.len * sizeof(void*));
+    p->now_symbol->as.body.num_elems = p->values.len;
+    p->now_symbol->as.body.nodes = malloc(sizeof(void*)*p->values.len);
+    memcpy(p->now_symbol->as.body.nodes, p->values.stack, p->values.len * sizeof(void*));
     ast_t *root = alloc_node(1);
     root->t = A_DECL;
     root->num_elems = 1;
